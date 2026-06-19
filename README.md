@@ -1,3 +1,17 @@
+---
+
+title: Ledger
+emoji: 🚀
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+-------------
+
+# Ledger Backend
+
+AI-powered finance backend.
+
 # Reconcile
 
 **An agentic invoice processing pipeline** — extraction, validation, 3-way matching, and risk-based approval routing, built with LangGraph and FastAPI.
