@@ -10,8 +10,8 @@ from google.genai.errors import ServerError
 import pycountry
 import psycopg2
 
-from app.schemas import Invoice, PurchaseOrder, GoodsReceipt
-from app.system_prompt import INVOICE_EXTRACTION_PROMPT, PO_EXTRACTION_PROMPT, GR_EXTRACTION_PROMPT
+from backend.app.schemas import Invoice, PurchaseOrder, GoodsReceipt
+from backend.app.system_prompt import INVOICE_EXTRACTION_PROMPT, PO_EXTRACTION_PROMPT, GR_EXTRACTION_PROMPT
 load_dotenv()
 
 llm = ChatGoogleGenerativeAI(

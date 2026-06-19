@@ -1,5 +1,5 @@
 from datetime import datetime 
-from app.schemas import MatchResult
+from backend.app.schemas import MatchResult
 
 def generate_report(invoice: dict, validation: tuple, match_result: MatchResult, classification: dict, risk: dict, approval: dict) -> dict:
     is_valid, validation_errors = validation
