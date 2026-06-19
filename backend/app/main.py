@@ -45,6 +45,7 @@ init_auth_db()  # ensures users/pipeline_runs tables + user_id columns exist on 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
