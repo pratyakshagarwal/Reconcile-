@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://pratyakshagarwal-ledger.hf.space";
 const TOKEN_KEY = "ledger_token";
 const EMAIL_KEY = "ledger_email";
 
