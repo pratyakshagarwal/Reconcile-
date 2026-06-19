@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Invoice Automation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="brand auth-brand">
+      <span class="brand-mark">§</span>
+      <span class="brand-name">Ledger</span>
+    </div>
+    <p class="auth-sub" id="authSub">Sign in to view your processed invoices.</p>
+
+    <form class="auth-form" id="authForm">
+      <label class="auth-label" for="authEmail">Email</label>
+      <input type="email" id="authEmail" required autocomplete="email">
+
+      <label class="auth-label" for="authPassword">Password</label>
+      <input type="password" id="authPassword" required autocomplete="current-password" minlength="8">
+
+      <button type="submit" class="btn-submit auth-submit" id="authSubmitBtn">Sign in</button>
+      <p class="auth-error" id="authError"></p>
+    </form>
+
+    <button class="auth-toggle" id="authToggleBtn">Don't have an account? Sign up</button>
+  </div>
+</div>
+
+<div class="app" id="app" hidden>
+
+  <!-- ============ SIDEBAR: LEDGER / HISTORY ============ -->
+  <aside class="ledger">
+    <div class="ledger-header">
+      <div class="brand">
+        <span class="brand-mark">§</span>
+        <span class="brand-name">Ledger</span>
+      </div>
+      <button class="btn-new" id="newInvoiceBtn">+ New invoice</button>
+    </div>
+
+    <div class="ledger-stats">
+      <div class="stat">
+        <span class="stat-value" id="statTotal">0</span>
+        <span class="stat-label">processed</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="statFlagged">0</span>
+        <span class="stat-label">flagged</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="statApproved">0</span>
+        <span class="stat-label">approved</span>
+      </div>
+    </div>
+
+    <div class="ledger-search">
+      <input type="text" id="searchInput" placeholder="Search vendor or invoice no.">
+    </div>
+
+    <div class="ledger-list" id="ledgerList">
+      <!-- populated by JS -->
+      <div class="ledger-empty" id="ledgerEmpty">
+        <p>No invoices processed yet.</p>
+        <p class="ledger-empty-sub">Upload one to begin.</p>
+      </div>
+    </div>
+
+    <div class="ledger-footer">
+      <span class="ledger-user-email" id="ledgerUserEmail"></span>
+      <button class="btn-logout" id="logoutBtn">Log out</button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN PANE ============ -->
+  <main class="main">
+
+    <!-- ---- VIEW: UPLOAD ---- -->
+    <section class="view view-upload" id="viewUpload">
+      <header class="view-header">
+        <h1>Process a new invoice</h1>
+        <p class="view-sub">Upload an invoice, and optionally its purchase order and goods receipt, to run the full verification pipeline.</p>
+      </header>
+
+      <form class="upload-form" id="uploadForm">
+        <div class="dropzone-row">
+
+          <label class="dropzone required" for="invoiceFile" data-slot="invoice">
+            <input type="file" id="invoiceFile" accept="application/pdf" required>
+            <span class="dz-index">01</span>
+            <span class="dz-title">Invoice</span>
+            <span class="dz-sub">Required</span>
+            <span class="dz-filename"></span>
+          </label>
+
+          <label class="dropzone" for="poFile" data-slot="po">
+            <input type="file" id="poFile" accept="application/pdf">
+            <span class="dz-index">02</span>
+            <span class="dz-title">Purchase order</span>
+            <span class="dz-sub">Optional — enables matching</span>
+            <span class="dz-filename"></span>
+          </label>
+
+          <label class="dropzone" for="grFile" data-slot="gr">
+            <input type="file" id="grFile" accept="application/pdf">
+            <span class="dz-index">03</span>
+            <span class="dz-title">Goods receipt</span>
+            <span class="dz-sub">Optional — enables matching</span>
+            <span class="dz-filename"></span>
+          </label>
+
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">Run pipeline</button>
+        <p class="form-note" id="formNote"></p>
+      </form>
+    </section>
+
+    <!-- ---- VIEW: LIVE PIPELINE RUN ---- -->
+    <section class="view view-pipeline" id="viewPipeline" hidden>
+      <header class="view-header">
+        <h1 id="pipelineTitle">Processing invoice</h1>
+        <p class="view-sub" id="pipelineSub">Each stage runs in sequence — watch the ledger stamp as it goes.</p>
+      </header>
+
+      <div class="stage-list" id="stageList">
+        <!-- populated by JS: one .stage-row per node -->
+      </div>
+    </section>
+
+    <!-- ---- VIEW: REPORT (final result, or selected from history) ---- -->
+    <section class="view view-report" id="viewReport" hidden>
+      <header class="view-header view-header-report">
+        <div>
+          <h1 id="reportVendor">—</h1>
+          <p class="view-sub" id="reportMeta">—</p>
+        </div>
+        <div class="report-decision" id="reportDecision">—</div>
+      </header>
+
+      <div class="report-grid">
+
+        <div class="report-card">
+          <h2>Amount</h2>
+          <p class="report-amount" id="reportAmount">—</p>
+          <p class="report-amount-sub" id="reportAmountSub">—</p>
+        </div>
+
+        <div class="report-card">
+          <h2>Validation</h2>
+          <p class="report-status" id="reportValidation">—</p>
+          <ul class="report-list" id="reportValidationErrors"></ul>
+        </div>
+
+        <div class="report-card">
+          <h2>Matching</h2>
+          <p class="report-status" id="reportMatching">—</p>
+          <ul class="report-list" id="reportMatchingIssues"></ul>
+        </div>
+
+        <div class="report-card">
+          <h2>Classification</h2>
+          <p class="report-status" id="reportClassification">—</p>
+          <div class="report-tags" id="reportClassBreakdown"></div>
+        </div>
+
+        <div class="report-card">
+          <h2>Risk</h2>
+          <p class="report-status" id="reportRisk">—</p>
+          <ul class="report-list" id="reportRiskReasons"></ul>
+        </div>
+
+        <div class="report-card">
+          <h2>Approval routing</h2>
+          <p class="report-status" id="reportApproval">—</p>
+        </div>
+
+      </div>
+
+      <button class="btn-secondary" id="backToUploadBtn">Process another invoice</button>
+    </section>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
