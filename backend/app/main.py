@@ -64,6 +64,9 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+@app.get("/")
+def home():
+    return {"status": "ok"}
 
 @app.post("/api/auth/signup", response_model=TokenResponse)
 def signup(payload: SignupRequest):
