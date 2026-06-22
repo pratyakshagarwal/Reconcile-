@@ -23,7 +23,7 @@ Built with LangGraph, FastAPI, Gemini, Supabase, and a live streaming frontend.
 
 ## Live Demo
 
-* Frontend: `https://reconcile-kqsc.vercel.app/`
+* Frontend: https://reconcile-kqsc.vercel.app/
 
 ### Demo Video
 
