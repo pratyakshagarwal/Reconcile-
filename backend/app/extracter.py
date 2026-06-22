@@ -12,6 +12,7 @@ import psycopg2
 
 from backend.app.schemas import Invoice, PurchaseOrder, GoodsReceipt
 from backend.app.system_prompt import INVOICE_EXTRACTION_PROMPT, PO_EXTRACTION_PROMPT, GR_EXTRACTION_PROMPT
+from backend.app.matching import match_invoice
 load_dotenv()
 
 llm = ChatGoogleGenerativeAI(
@@ -59,9 +60,18 @@ def extract_po(file_path: str) -> PurchaseOrder:
 def extract_gr(file_path: str) -> GoodsReceipt:
     return extract_document(file_path, GR_EXTRACTION_PROMPT, gr_llm)
 
-def extract(invoice_, gr_, po_) -> Tuple[Invoice, PurchaseOrder, GoodsReceipt]:
+def extract(invoice_, po_, gr_) -> Tuple[Invoice, PurchaseOrder, GoodsReceipt]:
     if invoice_ != None: invoice = extract_invoice(invoice_)
     if gr_ != None: gr = extract_gr(gr_)
     if po_ != None: po = extract_po(po_)
 
     return invoice, po, gr
+
+if __name__ == '__main__':
+    invoice, po, gr = extract(
+        invoice_='data/invoice/sample-invoice-template.pdf',
+        gr_="data/gud_recipt/sample-gr-mismatch.pdf",
+        po_="data/po/sample-po-mismatch.pdf"
+    )
+    result = match_invoice(invoice, po, gr)
+    print(result)
