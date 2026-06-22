@@ -15,132 +15,237 @@ AI-powered finance backend.
 
 # Reconcile
 
-**An agentic invoice processing pipeline** — extraction, validation, 3-way matching, and risk-based approval routing, built with LangGraph and FastAPI.
+An agentic invoice processing pipeline for extraction, validation, 3-way matching, risk scoring, and approval routing.
 
-Reconcile takes an invoice (and optionally its purchase order and goods receipt) and runs it through a sequence of specialized agents that mirror how real accounts-payable teams verify spend before paying it: pull the data out, check it's sane, make sure it's not a duplicate, verify it against what was actually ordered and received, categorize it, score its risk, and route it for approval — all visible in real time as it happens.
-
-This project is modeled on the document-intelligence and invoice-matching workflows used by platforms like Nanonets, scoped down to demonstrate the core pipeline end to end.
+Built with LangGraph, FastAPI, Gemini, Supabase, and a live streaming frontend.
 
 ---
 
-## What it does
+## Live Demo
 
-```
+* Frontend: `https://reconcile-kqsc.vercel.app/`
+
+### Demo Video
+
+`ADD_GITHUB_VIDEO_OR_YOUTUBE_LINK`
+
+### Final Processed Invoice UI
+
+<!-- Add screenshot here -->
+
+![Reconcile UI](./assets/final-ui-ledger.png)
+
+---
+
+## What Reconcile Does
+
+Reconcile processes invoices the way real accounts-payable teams do:
+
+1. Extract structured fields from uploaded documents
+2. Validate invoice integrity
+3. Detect duplicates
+4. Perform 3-way matching against PO + GR
+5. Classify expense category
+6. Score invoice risk
+7. Route for approval
+8. Generate a complete audit-trail report
+
+Every stage runs as a node inside a LangGraph workflow and streams live results to the frontend via Server-Sent Events.
+
+Invalid or duplicate invoices short-circuit early instead of wasting downstream compute.
+
+---
+
+## Pipeline
+
+```text
 Upload Invoice (+ optional PO / GR)
         │
         ▼
-  1. Extraction         — pulls structured fields from PDFs via Gemini (multimodal, schema-constrained)
+1. Extraction
         │
         ▼
-  2. Validation          — required fields present, amounts sane, dates and currency normalized
+2. Validation
         │
         ▼
-  3. Duplicate check       — composite key (vendor + invoice number), enforced at the DB level
+3. Duplicate Detection
         │
         ▼
-  4. 3-way matching          — invoice vs. purchase order vs. goods receipt, line-item by line-item,
-        │                       with configurable tolerance and severity-tagged issues
-        ▼
-  5. Classification            — expense category, rules-based with explicit "uncategorized" fallback
+4. 3-Way Matching
         │
         ▼
-  6. Risk scoring                 — aggregates signals from every prior stage into a score + tier
+5. Classification
         │
         ▼
-  7. Approval routing                — auto-approves low-risk matched invoices, routes the rest
+6. Risk Scoring
         │
         ▼
-  8. Report generation                  — a single audit-trail record summarizing every stage's verdict
+7. Approval Routing
+        │
+        ▼
+8. Audit Report Generation
 ```
 
-Each stage is a node in a [LangGraph](https://github.com/langchain-ai/langgraph) state machine, so the run can short-circuit early (an invalid or duplicate invoice never reaches matching/risk/approval) and every step's output is inspectable, not just the final result.
+---
 
-## Why these stages, specifically
+## Core Features
 
-Most "invoice extraction" projects stop at step 1. The thing that actually matters in accounts payable — and what most toy projects skip — is **3-way matching**: verifying the invoice's claim against independent evidence of what was ordered and what was actually delivered, rather than trusting the invoice alone. That's the core of this project, not an afterthought.
+### Structured Document Extraction
 
-Every matching issue carries a `severity` (`critical` vs `warning`) rather than a flat pass/fail, so downstream agents — and a human reviewer, eventually — get *why* something was flagged, not just *that* it was.
+Uses Gemini multimodal extraction with schema-constrained outputs for invoices, purchase orders, and goods receipts.
 
-## Live, streaming pipeline
+### 3-Way Matching
 
-Processing an invoice isn't a black box. The backend streams each agent's result over Server-Sent Events as it completes, and the frontend renders this as a live "stamped ledger" — each stage lights up, then stamps green (passed) or rust-red (flagged) as its verdict arrives.
+Compares:
 
-## Stack
+* Invoice
+* Purchase Order
+* Goods Receipt
 
-| Layer | Tech |
-|---|---|
-| Orchestration | LangGraph |
-| Extraction | Gemini (multimodal, structured output via LangChain) |
-| API | FastAPI, Server-Sent Events for streaming |
-| Auth | JWT, bcrypt-hashed passwords |
-| Database | PostgreSQL |
-| Frontend | Plain HTML/CSS/JS — no framework |
+Line-by-line with configurable tolerances and severity-tagged discrepancies.
 
-## Project structure
+### Risk-Aware Approval Routing
 
+Low-risk matched invoices can auto-approve, while flagged invoices route for review.
+
+### Live Streaming Pipeline
+
+Each agent streams results in real time to the frontend ledger UI using SSE.
+
+### Auditability
+
+Every stage produces an inspectable output rather than a single opaque response.
+
+---
+
+## Tech Stack
+
+| Layer         | Tech                         |
+| ------------- | ---------------------------- |
+| Orchestration | LangGraph                    |
+| Extraction    | Gemini + LangChain           |
+| Backend       | FastAPI                      |
+| Streaming     | Server-Sent Events           |
+| Database      | Supabase (PostgreSQL)        |
+| Auth          | JWT + bcrypt                 |
+| Frontend      | HTML / CSS / JavaScript      |
+| Deployment    | Vercel + Hugging Face Spaces |
+
+---
+
+## Architecture
+
+```text
+Frontend (Vercel)
+        │
+        ▼
+FastAPI Backend (HF Spaces)
+        │
+        ├── LangGraph Workflow
+        ├── Gemini Extraction
+        ├── Matching + Risk Engine
+        └── SSE Streaming
+                │
+                ▼
+        Supabase PostgreSQL
 ```
+
+---
+
+## Project Structure
+
+```text
 backend/
   app/
-    main.py          — FastAPI routes, SSE streaming endpoint, auth routes
-    agent.py         — LangGraph pipeline definition (nodes + edges)
-    auth.py          — password hashing, JWT issuance/verification
-    auth_db.py       — users + pipeline_runs tables and queries
-    db.py            — invoices/purchase_orders/goods_receipts tables and queries
-    extracter.py     — Gemini extraction (invoice / PO / GR)
-    validator.py     — field-level validation
-    matching.py       — 3-way matching logic
-    classify.py        — expense classification
-    risk_analysis.py    — risk scoring
-    approval.py           — approval routing
-    report.py               — audit report assembly
+    main.py
+    agent.py
+    auth.py
+    auth_db.py
+    db.py
+    extracter.py
+    validator.py
+    matching.py
+    classify.py
+    risk_analysis.py
+    approval.py
+    report.py
 
 frontend/
-  index.html         — upload flow, live pipeline view, report view, auth screen
-  style.css           — ledger-themed visual design
-  app.js                — SSE consumption, view routing, auth/session handling
+  index.html
+  style.css
+  app.js
 ```
 
-## Running it locally
+---
 
-**1. Postgres** (Docker):
-```bash
-docker run --name reconcile-postgres \
-  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=invoices -p 5432:5432 -d postgres:16
-```
+## Running Locally
 
-**2. Backend:**
+### Backend
+
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Requires a `.env` file:
-```
+Create a `.env` file:
+
+```env
 API_KEY=your_gemini_api_key
 MODEL_NAME=gemini-2.5-flash
-DB_URL=postgresql://postgres:postgres@localhost:5432/invoices
-JWT_SECRET=a_long_random_string
+DB_URL=your_supabase_postgres_url
+JWT_SECRET=your_secret
 ```
 
-**3. Frontend:**
+### Frontend
+
 ```bash
 cd frontend
 python -m http.server 8080
 ```
 
-Open `http://localhost:8080`, sign up, and upload an invoice (PO/GR optional — matching is skipped with a warning if either is missing).
+Open:
 
-## Honest limitations
+```text
+http://localhost:8080
+```
 
-This is a portfolio/demonstration project, not a production system — worth being upfront about what's intentionally out of scope rather than overstating it:
+---
 
-- **Classification is rules-based** (keyword matching against a starter category list), not ML-driven — explicit by design, since duplicate/classification logic doesn't need a model, but it means the category list needs to grow with real usage.
-- **Risk scoring uses a small, hand-picked set of signals** — a real system would weight far more historical/behavioral data per vendor.
-- **No ERP integration** — purchase orders and goods receipts are uploaded as documents in this version. A production system would typically sync these from the buyer's existing ERP/procurement system rather than requiring re-upload.
-- **Single-instance, synchronous pipeline execution** — concurrent users processing invoices simultaneously will queue rather than run in parallel, since the LangGraph nodes are currently synchronous.
+## Honest Limitations
 
-## Background
+This is a portfolio/demo project rather than a production AP platform.
 
-Built as a hands-on exploration of agentic AI applied to a real operational workflow, alongside ongoing AI/ML internship search. If you're working on something similar or have feedback, I'd genuinely like to hear it.
+Current limitations include:
+
+* Rules-based expense classification
+* No ERP integrations
+* Synchronous pipeline execution
+* Limited historical/vendor-aware risk modeling
+* Matching tuned for common invoice structures rather than highly noisy enterprise documents
+
+---
+
+## Why This Project Exists
+
+Most invoice AI demos stop at OCR extraction.
+
+The interesting operational problem is verifying whether the invoice should actually be paid.
+
+Reconcile focuses on the workflow layer:
+validation, matching, auditability, and approval orchestration.
+
+---
+
+## Future Improvements
+
+* Async/concurrent pipeline execution
+* Human review dashboard
+* ERP integrations
+* Vendor behavior profiling
+* Configurable approval policies
+* Analytics + monitoring
+* Confidence scoring
+* Advanced document handling for noisy scans
+
+---
