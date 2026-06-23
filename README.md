@@ -27,7 +27,7 @@ Built with LangGraph, FastAPI, Gemini, Supabase, and a live streaming frontend.
 
 ### Demo Video
 
-[Watch the demo](https://github.com/user-attachments/assets/ea76ca30-04f7-4181-b14d-160f1cb8366a)
+[Watch the demo](https://github.com/user-attachments/assets/1da1f596-7577-42e4-a270-081f3ea4aa21)
 
 ### Final Processed Invoice UI
 
