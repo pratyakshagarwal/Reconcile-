@@ -1,14 +1,15 @@
 from typing import TypedDict, Optional
 from langgraph.graph import StateGraph, END, START
 
-from app.extracter import extract
-from app.validator import validate_invoice
-from app.db import check_duplicate, insert_invoice
-from app.matching import match_invoice, MatchResult
-from app.classify import classify_invoice
-from app.risk_analysis import assess_risk
-from app.approval import route_approval
-from app.report import generate_report
+from backend.app.extracter import extract
+from backend.app.validator import validate_invoice
+from backend.app.db import check_duplicate, insert_invoice
+from backend.app.matching import match_invoice, MatchResult
+from backend.app.classify import classify_invoice
+from backend.app.risk_analysis import assess_risk
+from backend.app.approval import route_approval
+from backend.app.report import generate_report
+from backend.app.helper import extract_confidences, unwrap_confident_fields
 
 
 class PipelineState(TypedDict):
@@ -18,6 +19,7 @@ class PipelineState(TypedDict):
     invoice: Optional[dict]
     po: Optional[dict]
     gr: Optional[dict]
+    invoice_confidences: Optional[dict]
     is_valid: Optional[bool]
     validation_errors: Optional[list]
     is_duplicate: Optional[bool]
@@ -31,13 +33,17 @@ class PipelineState(TypedDict):
 
 def extraction_node(state: PipelineState) -> PipelineState:
     invoice, po, gr = extract(state["invoice_path"], state["po_path"], state["gr_path"])
+    
+    raw_invoice = invoice.model_dump() if invoice else None
+    confidences = extract_confidences(raw_invoice) if raw_invoice else None  # keep these separately
+    
     return {
         **state,
-        "invoice": invoice.model_dump() if invoice else None,
+        "invoice": unwrap_confident_fields(raw_invoice) if raw_invoice else None,
+        "invoice_confidences": confidences,  # stashed for the Risk Agent to use later
         "po": po.model_dump() if po else None,
         "gr": gr.model_dump() if gr else None,
     }
-
 
 def validation_node(state: PipelineState) -> PipelineState:
     is_valid, errors = validate_invoice(state["invoice"])
@@ -67,7 +73,7 @@ def classification_node(state: PipelineState) -> PipelineState:
 
 def risk_node(state: PipelineState) -> PipelineState:
     match_result = MatchResult(**state["match_result"])
-    risk = assess_risk(state["invoice"], match_result, vendor_history={})
+    risk = assess_risk(state["invoice"], match_result, state['invoice_confidences'])
     return {**state, "risk": risk}
 
 
@@ -143,9 +149,9 @@ def create_graph(nodes, paths):
 if __name__ == '__main__':
     pipeline = create_graph(nodes, paths)
     result = pipeline.invoke({
-        "invoice_path": "../data/invoices/sample-invoice-template.pdf",
-        "po_path": "../data/po/sample-po-match.pdf",
-        "gr_path": "../data/gud_recipt/sample-gr-match.pdf",
+        "invoice_path": "data\invoices\invoice-sample.pdf",
+        "po_path": "data\po\purchase-order-PO-4872-25.pdf",
+        "gr_path": "data\gud_recipt\goods-receipt-note-GRN-4872-25.pdf",
     })
 
     if "report" in result:
@@ -156,3 +162,4 @@ if __name__ == '__main__':
             print("Validation errors:", result.get("validation_errors"))
         elif result.get("status") == "rejected_duplicate":
             print("This invoice already exists in the database.")
+    print(result)
