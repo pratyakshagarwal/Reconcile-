@@ -28,10 +28,10 @@ from pydantic import BaseModel, EmailStr
 
 # These import from your existing pipeline module — adjust the import path
 # to wherever create_graph/nodes/paths actually live in your project.
-from app.agent import create_graph, nodes, paths
-from app.db import get_connection
-from app.auth import hash_password, verify_password, create_access_token, get_current_user_id
-from app.auth_db import (
+from backend.app.agent import create_graph, nodes, paths
+from backend.app.db import get_connection
+from backend.app.auth import hash_password, verify_password, create_access_token, get_current_user_id
+from backend.app.auth_db import (
     init_auth_db, create_user, get_user_by_email,
     insert_pipeline_run, list_pipeline_runs, get_pipeline_run,
     VALID_DECISIONS, update_run_decision
@@ -46,6 +46,7 @@ init_auth_db()  # ensures users/pipeline_runs tables + user_id columns exist on 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -65,6 +66,9 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+@app.get("/")
+def home():
+    return {"status": "ok"}
 
 @app.post("/api/auth/signup", response_model=TokenResponse)
 def signup(payload: SignupRequest):

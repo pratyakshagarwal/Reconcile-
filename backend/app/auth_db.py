@@ -6,7 +6,7 @@ and back-fill user_id columns onto invoices/purchase_orders/goods_receipts.
 """
 
 import json
-from app.db import get_connection
+from backend.app.db import get_connection
 
 
 def init_auth_db():
