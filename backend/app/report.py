@@ -7,6 +7,7 @@ def generate_report(invoice: dict, validation: tuple, match_result: MatchResult,
         "invoice_number": invoice.get("invoice_number"),
         "vendor_name": invoice.get("vendor_name"),
         "total_amount": invoice.get("total_amount"),
+        "currency": invoice.get("currency"),
         "stages": {
             "validation": {"passed": is_valid, "errors": validation_errors},
             "matching": {"matched": match_result.matched, "issues": [i.model_dump() for i in match_result.issues]},

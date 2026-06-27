@@ -34,6 +34,7 @@ from app.auth import hash_password, verify_password, create_access_token, get_cu
 from app.auth_db import (
     init_auth_db, create_user, get_user_by_email,
     insert_pipeline_run, list_pipeline_runs, get_pipeline_run,
+    VALID_DECISIONS, update_run_decision
 )
 
 app = FastAPI(title="Invoice Automation Pipeline")
@@ -195,6 +196,16 @@ async def process_invoice(
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
+@app.post("/api/runs/{run_id}/decide")
+def decide_run(run_id: int, decision: str, user_id: int = Depends(get_current_user_id)):
+    if decision not in VALID_DECISIONS:
+        raise HTTPException(status_code=400, detail=f"decision must be one of {VALID_DECISIONS}")
+
+    updated = update_run_decision(run_id, user_id, decision)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Run not found.")
+
+    return {"run_id": run_id, "decision": decision}
 
 def jsonable(value):
     """Best-effort conversion of pipeline state values into JSON-safe primitives."""
