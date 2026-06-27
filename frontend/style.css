@@ -527,3 +527,77 @@ h1, h2, h3 { margin: 0; font-family: var(--font-serif); font-weight: 500; color:
   .dropzone-row { grid-template-columns: 1fr; }
   .report-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   HUMAN REVIEW DECISION BUTTONS
+   ============================================================ */
+.decision-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn-approve {
+  background: var(--ledger-green);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--radius);
+  padding: 9px 18px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-approve:hover { background: var(--ledger-green-deep); }
+.btn-approve:disabled { background: var(--ink-faint); cursor: not-allowed; }
+
+.btn-reject {
+  background: none;
+  border: 1px solid var(--rust);
+  color: var(--rust);
+  border-radius: var(--radius);
+  padding: 9px 18px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-reject:hover { background: var(--rust-dim); }
+.btn-reject:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.decision-result {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  min-height: 18px;
+}
+
+.ledger-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.ledger-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 10px 4px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.ledger-tab:hover { color: var(--ink); }
+.ledger-tab.active {
+  color: var(--ledger-green-deep);
+  border-bottom-color: var(--ledger-green);
+}
+
+.ledger-row-provenance {
+  font-size: 10px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+  font-style: italic;
+}

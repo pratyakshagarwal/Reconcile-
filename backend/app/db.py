@@ -133,6 +133,24 @@ def insert_invoice(invoice: dict) -> int:
 
 # ---------- Insert PO + its line items ----------
 
+def check_duplicate_po(po: dict) -> bool:
+    conn = get_connection()
+    cur = conn.cursor()
+
+    po_number = (po.get("po_number") or "").strip().lower()
+
+    cur.execute(
+        "SELECT id FROM purchase_orders WHERE LOWER(po_number) = %s",
+        (po_number,)
+    )
+
+    result = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return result is not None
+
 def insert_po(po: dict) -> int:
     conn = get_connection()
     cur = conn.cursor()
@@ -158,6 +176,30 @@ def insert_po(po: dict) -> int:
 
 
 # ---------- Insert GR + its line items ----------
+
+def check_duplicate_gr(gr: dict) -> bool:
+    conn = get_connection()
+    cur = conn.cursor()
+
+    po_number = (gr.get("po_number") or "").strip().lower()
+    received_date = gr.get("received_date")
+
+    cur.execute(
+        """
+        SELECT id
+        FROM goods_receipts
+        WHERE LOWER(po_number) = %s
+        AND received_date = %s
+        """,
+        (po_number, received_date)
+    )
+
+    result = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return result is not None
 
 def insert_gr(gr: dict) -> int:
     conn = get_connection()

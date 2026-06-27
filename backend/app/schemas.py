@@ -1,35 +1,47 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator
 
+
+class ConfidentField(BaseModel):
+    value: Optional[str | float] = None
+    confidence: float = 0.0
+    
 class LineItem(BaseModel):
     description: Optional[str] = None
     quantity: Optional[float] = None
     unit_price: Optional[float] = None
 
 
-class Invoice(BaseModel):
-    invoice_number: Optional[str] = None
-    vendor_name: Optional[str] = None
-    invoice_date: Optional[str] = None
-    po_number: Optional[str] = None
-    total_amount: Optional[float] = None
-    currency: Optional[str] = None
-    tax_amount: Optional[float] = None
-    line_items: list[LineItem] = []
+class LineItemWithConfidence(BaseModel):
+    description: Optional[str] = None
+    quantity: Optional[float] = None
+    unit_price: Optional[float] = None
+    confidence: float = 0.0
 
-    @field_validator("invoice_date")
-    @classmethod
-    def normalize_date(cls, v):
+
+class Invoice(BaseModel):
+    invoice_number: ConfidentField = ConfidentField()
+    vendor_name: ConfidentField = ConfidentField()
+    invoice_date: ConfidentField = ConfidentField()
+    po_number: ConfidentField = ConfidentField()
+    total_amount: ConfidentField = ConfidentField()
+    currency: ConfidentField = ConfidentField()
+    tax_amount: ConfidentField = ConfidentField()
+    line_items: list[LineItemWithConfidence] = []
+
+    @model_validator(mode="after")
+    def normalize_date(self):
+        v = self.invoice_date.value
         if v is None:
-            return v
+            return self
         for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y", "%B %d, %Y", "%b %d, %Y"):
             try:
-                return datetime.strptime(v, fmt).strftime("%Y-%m-%d")
+                self.invoice_date.value = datetime.strptime(v, fmt).strftime("%Y-%m-%d")
+                return self
             except ValueError:
                 continue
-        return v  # leave as-is if unparseable — Validation Agent will flag it
-
+        return self
 
 class PurchaseOrder(BaseModel):
     po_number: Optional[str] = None
