@@ -1,0 +1,11 @@
+# contains the testing ipynb(jupyter notebooks)
+notebooks
+
+# contains api's and db configuration link
+.env
+
+# contains invoice/purchase_order/good_recipt for testing
+/data
+
+# necceassry file __pycache__/
+*.pyc

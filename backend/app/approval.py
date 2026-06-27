@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from app.schemas import MatchResult
+from backend.app.schemas import MatchResult
 
 load_dotenv()
 AUTO_APPROVE_LIMIT = os.getenv("AUTO_APPROVE_LIMIT", 5000)

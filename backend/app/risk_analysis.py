@@ -1,4 +1,4 @@
-from app.schemas import MatchResult
+from backend.app.schemas import MatchResult
 
 def assess_risk(invoice: dict, match_result: MatchResult, vendor_history: dict) -> dict:
     score = 0
