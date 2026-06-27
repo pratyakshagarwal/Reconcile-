@@ -1,4 +1,4 @@
-from app.schemas import MatchIssue, MatchResult
+from backend.app.schemas import MatchIssue, MatchResult
 
 def match_invoice(invoice: dict, po: dict, gr: dict, price_tolerance_pct: float = 2.0) -> MatchResult:
     issues = []
