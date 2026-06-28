@@ -1,9 +1,12 @@
-from typing import TypedDict, Optional
+from typing import TypedDict, Optional, List, Dict
 from langgraph.graph import StateGraph, END, START
 
 from backend.app.extracter import extract
 from backend.app.validator import validate_invoice
-from backend.app.db import check_duplicate, insert_invoice
+from backend.app.db import (
+    check_duplicate,check_duplicate_gr, check_duplicate_po, 
+    insert_invoice, insert_gr, insert_po
+)
 from backend.app.matching import match_invoice, MatchResult
 from backend.app.classify import classify_invoice
 from backend.app.risk_analysis import assess_risk
@@ -29,6 +32,7 @@ class PipelineState(TypedDict):
     approval: Optional[dict]
     report: Optional[dict]
     status: Optional[str]  # used to short-circuit on duplicate/invalid
+    warnings: List[Dict]
 
 
 def extraction_node(state: PipelineState) -> PipelineState:
@@ -53,11 +57,42 @@ def validation_node(state: PipelineState) -> PipelineState:
 
 
 def duplicate_node(state: PipelineState) -> PipelineState:
-    is_dup = check_duplicate(state["invoice"])
-    if is_dup:
-        return {**state, "is_duplicate": True, "status": "rejected_duplicate"}
-    insert_invoice(state['invoice'])
-    return {**state, "is_duplicate": False}
+    if check_duplicate(state["invoice"]):
+        return {
+            **state,
+            "is_duplicate": True,
+            "status": "rejected_duplicate"
+        }
+
+    checks = [
+        (
+            check_duplicate_po,
+            insert_po,
+            state["po"],
+            "DuplicatePurchaseOrder",
+            "purchase order with same no exists in database"
+        ),
+        (
+            check_duplicate_gr,
+            insert_gr,
+            state["gr"],
+            "DuplicateGoodsReceipt",
+            "receipt with same no exists in database"
+        ),
+    ]
+
+    for check_fn, insert_fn, data, key, msg in checks:
+        if check_fn(data):
+            state["warnings"].append({key: msg})
+        else:
+            insert_fn(data)
+
+    insert_invoice(state["invoice"])
+
+    return {
+        **state,
+        "is_duplicate": False
+    }
 
 
 def matching_node(state: PipelineState) -> PipelineState:
