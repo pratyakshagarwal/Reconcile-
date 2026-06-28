@@ -1,7 +1,8 @@
 from datetime import datetime 
 from backend.app.schemas import MatchResult
 
-def generate_report(invoice: dict, validation: tuple, match_result: MatchResult, classification: dict, risk: dict, approval: dict) -> dict:
+def generate_report(invoice: dict, validation: tuple, match_result: MatchResult, classification: dict,
+                     risk: dict, approval: dict, duplicate_warnings) -> dict:
     is_valid, validation_errors = validation
     return {
         "invoice_number": invoice.get("invoice_number"),
@@ -10,6 +11,7 @@ def generate_report(invoice: dict, validation: tuple, match_result: MatchResult,
         "currency": invoice.get("currency"),
         "stages": {
             "validation": {"passed": is_valid, "errors": validation_errors},
+            "duplication": duplicate_warnings,
             "matching": {"matched": match_result.matched, "issues": [i.model_dump() for i in match_result.issues]},
             "classification": classification,
             "risk": risk,
