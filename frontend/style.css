@@ -601,3 +601,10 @@ h1, h2, h3 { margin: 0; font-family: var(--font-serif); font-weight: 500; color:
   margin-top: 2px;
   font-style: italic;
 }
+
+.report-explanation-text {
+  margin-top: 10px;
+  line-height: 1.6;
+  color: var(--ink);
+  font-size: 0.96rem;
+}
