@@ -64,14 +64,14 @@ def process_context(report: dict) -> dict:
 
     # Matching issues
     for issue in matching.get("issues", []):
+
         field = issue.get("field", "")
         severity = issue.get("severity", "medium")
 
         # Missing line items
         if field.startswith("line_item:"):
-            item_name = field.replace("line_item:", "").strip()
 
-            # truncate absurdly long names
+            item_name = field.replace("line_item:", "").strip()
             item_name = item_name[:80]
 
             signals.append(
@@ -80,19 +80,39 @@ def process_context(report: dict) -> dict:
 
         # Total mismatch
         elif field == "total_amount":
+
             signals.append(
                 f"Invoice total differs significantly from expected value "
                 f"(expected {issue.get('expected')}, found {issue.get('actual')})"
             )
 
         else:
+
             signals.append(
                 f"{field} mismatch detected with {severity} severity"
             )
 
     # Pipeline warnings
     for warning in warnings:
-        signals.append(f"Warning: {warning}")
+
+        # warnings are like:
+        # {"DuplicatePurchaseOrder": "purchase order with same no exists in database"}
+
+        if isinstance(warning, dict):
+
+            for key, value in warning.items():
+
+                readable_key = (
+                    key.replace("_", " ")
+                    .replace("-", " ")
+                )
+
+                signals.append(
+                    f"{readable_key}: {value}"
+                )
+
+        else:
+            signals.append(str(warning))
 
     return {
         "invoice_number": report.get("invoice_number"),
@@ -101,7 +121,6 @@ def process_context(report: dict) -> dict:
         "risk_score": risk.get("score"),
         "signals": signals
     }
-
 
 
 if __name__ == '__main__':pass
