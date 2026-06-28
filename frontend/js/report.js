@@ -51,6 +51,17 @@ function renderReport(report, status) {
   setStatus("reportRisk", `${capitalize(r.tier || "—")} (score ${r.score ?? "—"})`, r.tier === "high" ? "flagged" : r.tier === "medium" ? "warn" : "ok");
   fillList("reportRiskReasons", r.reasons || []);
 
+  // explanation
+  const explanationSection = document.getElementById("reportExplanationSection");
+  const explanationText = document.getElementById("reportExplanation");
+
+  if (report.explanation) {
+    explanationSection.hidden = false;
+    explanationText.textContent = report.explanation;
+  } else {
+    explanationSection.hidden = true;
+  }
+
   const a = report.stages?.approval || {};
   setStatus("reportApproval", a.decision === "auto_approved" ? "Auto-approved" : `Sent to ${a.approver || "review"}`, a.decision === "auto_approved" ? "ok" : "warn");
 
