@@ -43,4 +43,65 @@ def get_vendor_history(vendor_name: str) -> dict:
         "invoice_count": count,
     }
 
+def process_context(report: dict) -> dict:
+    """
+    Convert full pipeline report into a compact,
+    LLM-friendly explanation context.
+    """
+
+    stages = report.get("stages", {})
+
+    validation = stages.get("validation", {})
+    matching = stages.get("matching", {})
+    risk = stages.get("risk", {})
+    warnings = stages.get("warnings", [])
+
+    signals = []
+
+    # Validation errors
+    for err in validation.get("errors", []):
+        signals.append(f"Validation error: {err}")
+
+    # Matching issues
+    for issue in matching.get("issues", []):
+        field = issue.get("field", "")
+        severity = issue.get("severity", "medium")
+
+        # Missing line items
+        if field.startswith("line_item:"):
+            item_name = field.replace("line_item:", "").strip()
+
+            # truncate absurdly long names
+            item_name = item_name[:80]
+
+            signals.append(
+                f"Critical line item missing from goods receipt: {item_name}"
+            )
+
+        # Total mismatch
+        elif field == "total_amount":
+            signals.append(
+                f"Invoice total differs significantly from expected value "
+                f"(expected {issue.get('expected')}, found {issue.get('actual')})"
+            )
+
+        else:
+            signals.append(
+                f"{field} mismatch detected with {severity} severity"
+            )
+
+    # Pipeline warnings
+    for warning in warnings:
+        signals.append(f"Warning: {warning}")
+
+    return {
+        "invoice_number": report.get("invoice_number"),
+        "vendor_name": report.get("vendor_name"),
+        "risk_level": risk.get("tier"),
+        "risk_score": risk.get("score"),
+        "signals": signals
+    }
+
+
+
 if __name__ == '__main__':pass
