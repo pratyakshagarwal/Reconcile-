@@ -6,6 +6,7 @@ and back-fill user_id columns onto invoices/purchase_orders/goods_receipts.
 """
 
 import json
+from datetime import datetime, timezone
 from backend.app.db import get_connection
 
 
@@ -40,6 +41,11 @@ def init_auth_db():
     cur.execute("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)")
     cur.execute("ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)")
     cur.execute("ALTER TABLE goods_receipts ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)")
+    # one-time additions — safe to re-run, ALTER...IF NOT EXISTS skips if already applied
+    cur.execute("ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS human_decision TEXT")
+    cur.execute("ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS decided_by INTEGER REFERENCES users(id)")
+    cur.execute("ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS decided_at TIMESTAMP")
+
 
     conn.commit()
     cur.close()
@@ -92,7 +98,7 @@ def list_pipeline_runs(user_id: int, limit: int = 50) -> list[dict]:
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        """SELECT id, invoice_id, status, report, created_at
+        """SELECT id, invoice_id, status, report, human_decision, decided_at, created_at
            FROM pipeline_runs
            WHERE user_id = %s
            ORDER BY created_at DESC
@@ -104,7 +110,12 @@ def list_pipeline_runs(user_id: int, limit: int = 50) -> list[dict]:
     conn.close()
 
     return [
-        {"id": r[0], "invoice_id": r[1], "status": r[2], "report": r[3], "created_at": r[4].isoformat()}
+        {
+            "id": r[0], "invoice_id": r[1], "status": r[2], "report": r[3],
+            "human_decision": r[4],
+            "decided_at": r[5].isoformat() if r[5] else None,
+            "created_at": r[6].isoformat(),
+        }
         for r in rows
     ]
 
@@ -114,7 +125,7 @@ def get_pipeline_run(user_id: int, run_id: int) -> dict | None:
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        """SELECT id, invoice_id, status, report, created_at
+        """SELECT id, invoice_id, status, report, human_decision, decided_at, created_at
            FROM pipeline_runs
            WHERE id = %s AND user_id = %s""",
         (run_id, user_id)
@@ -125,4 +136,33 @@ def get_pipeline_run(user_id: int, run_id: int) -> dict | None:
 
     if row is None:
         return None
-    return {"id": row[0], "invoice_id": row[1], "status": row[2], "report": row[3], "created_at": row[4].isoformat()}
+    return {
+        "id": row[0], "invoice_id": row[1], "status": row[2], "report": row[3],
+        "human_decision": row[4],
+        "decided_at": row[5].isoformat() if row[5] else None,
+        "created_at": row[6].isoformat(),
+    }
+
+VALID_DECISIONS = {"approved", "rejected"}
+
+
+def update_run_decision(run_id: int, user_id: int, decision: str) -> bool:
+    """
+    Records a human's approve/reject decision on a pipeline run.
+    Scoped to user_id so a user can only decide on their own runs.
+    Returns True if a row was actually updated, False if no matching run was found
+    (either it doesn't exist, or it belongs to a different user).
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """UPDATE pipeline_runs
+           SET human_decision = %s, decided_by = %s, decided_at = %s
+           WHERE id = %s AND user_id = %s""",
+        (decision, user_id, datetime.now(timezone.utc), run_id, user_id)
+    )
+    updated = cur.rowcount > 0
+    conn.commit()
+    cur.close()
+    conn.close()
+    return updated
