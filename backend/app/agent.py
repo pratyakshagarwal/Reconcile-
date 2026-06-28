@@ -126,6 +126,7 @@ def report_node(state: PipelineState) -> PipelineState:
         classification=state["classification"],
         risk=state["risk"],
         approval=state["approval"],
+        warnings=state['warnings']
     )
     return {**state, "report": report, "status": state.get("status", "processed")}
 
