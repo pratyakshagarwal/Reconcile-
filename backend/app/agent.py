@@ -63,7 +63,8 @@ def duplicate_node(state: PipelineState) -> PipelineState:
             "is_duplicate": True,
             "status": "rejected_duplicate"
         }
-
+    
+    warnings = []
     checks = [
         (
             check_duplicate_po,
@@ -83,7 +84,7 @@ def duplicate_node(state: PipelineState) -> PipelineState:
 
     for check_fn, insert_fn, data, key, msg in checks:
         if check_fn(data):
-            state["warnings"].append({key: msg})
+            warnings.append({key: msg})
         else:
             insert_fn(data)
 
@@ -91,7 +92,8 @@ def duplicate_node(state: PipelineState) -> PipelineState:
 
     return {
         **state,
-        "is_duplicate": False
+        "is_duplicate": False,
+        "warnings":warnings
     }
 
 
