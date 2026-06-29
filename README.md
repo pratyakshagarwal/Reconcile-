@@ -83,7 +83,7 @@ Example:
 ---
 
 # Pipeline
-
+```text
 Upload Invoice (+ optional PO / GR)
         │
         ▼
@@ -116,6 +116,7 @@ Upload Invoice (+ optional PO / GR)
    Flagged reports can be approved or
    rejected from the dashboard at any
    time after the run finishes.
+```
 ---
 
 # Core Features
