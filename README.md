@@ -84,7 +84,6 @@ Example:
 
 # Pipeline
 
-```text
 Upload Invoice (+ optional PO / GR)
         │
         ▼
@@ -103,21 +102,20 @@ Upload Invoice (+ optional PO / GR)
 5. Classification
         │
         ▼
-6. Vendor Anomaly Analysis
+6. Risk Scoring (incorporates vendor anomaly analysis)
         │
         ▼
-7. Risk Scoring
+7. Approval Routing
         │
         ▼
-8. Approval Routing
+8. Audit Report + AI Explanation
         │
         ▼
-9. Human Review Layer
-        │
-        ▼
-10. Audit Report + AI Explanation
-```
-
+   ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+   Human Review (async, post-completion)
+   Flagged reports can be approved or
+   rejected from the dashboard at any
+   time after the run finishes.
 ---
 
 # Core Features
