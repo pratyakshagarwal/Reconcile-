@@ -9,7 +9,7 @@ Protected routes (require Authorization: Bearer <token>):
   POST /api/process        — upload invoice (+ optional PO/GR), stream node-by-node results via SSE
   GET  /api/runs            — list THIS user's past pipeline runs (session history)
   GET  /api/runs/{run_id}   — full report for one of THIS user's past runs
-
+  j
 Run with: uvicorn app.main:app --reload
 """
 
@@ -201,15 +201,20 @@ async def process_invoice(
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.post("/api/runs/{run_id}/decide")
-def decide_run(run_id: int, decision: str, user_id: int = Depends(get_current_user_id)):
+def decide_run(
+    run_id: int,
+    decision: str,
+    note: str | None = None,
+    user_id: int = Depends(get_current_user_id),
+):
     if decision not in VALID_DECISIONS:
         raise HTTPException(status_code=400, detail=f"decision must be one of {VALID_DECISIONS}")
 
-    updated = update_run_decision(run_id, user_id, decision)
+    updated = update_run_decision(run_id, user_id, decision, note or "")
     if not updated:
         raise HTTPException(status_code=404, detail="Run not found.")
 
-    return {"run_id": run_id, "decision": decision}
+    return {"run_id": run_id, "decision": decision, "note": note}
 
 def jsonable(value):
     """Best-effort conversion of pipeline state values into JSON-safe primitives."""
@@ -218,6 +223,7 @@ def jsonable(value):
     if hasattr(value, "model_dump"):
         return value.model_dump()
     return value
+
 
 
 @app.get("/api/runs")
