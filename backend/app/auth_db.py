@@ -45,7 +45,7 @@ def init_auth_db():
     cur.execute("ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS human_decision TEXT")
     cur.execute("ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS decided_by INTEGER REFERENCES users(id)")
     cur.execute("ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS decided_at TIMESTAMP")
-
+    cur.execute("ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS reviewer_note TEXT")
     create_reviewer_decisions_table()
 
     conn.commit()
