@@ -11,7 +11,6 @@ from backend.app.matching import match_invoice, MatchResult
 from backend.app.classify import classify_invoice
 from backend.app.risk_analysis import assess_risk
 from backend.app.approval import route_approval
-from backend.app.dbs.risk_db import get_vendor_baseline
 from backend.app.report import generate_report
 from backend.app.helper import extract_confidences, unwrap_confident_fields
 
