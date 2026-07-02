@@ -15,7 +15,7 @@ AI-powered finance backend.
 
 # Reconcile
 
-An agentic invoice processing pipeline for extraction, validation, 3-way matching, risk scoring, and approval routing.
+An agentic accounts-payable automation system for invoice extraction, validation, 3-way matching, anomaly detection, risk scoring, and approval orchestration.
 
 Built with LangGraph, FastAPI, Gemini, Supabase, and a live streaming frontend.
 
@@ -23,7 +23,7 @@ Built with LangGraph, FastAPI, Gemini, Supabase, and a live streaming frontend.
 
 ## Live Demo
 
-* Frontend: https://reconcile-kqsc.vercel.app/
+Frontend: https://reconcile-kqsc.vercel.app/
 
 ### Demo Video
 
@@ -31,33 +31,58 @@ Built with LangGraph, FastAPI, Gemini, Supabase, and a live streaming frontend.
 
 ### Final Processed Invoice UI
 
-<!-- Add screenshot here -->
+---
 
-![Reconcile UI](./assets/final-ui-ledger.png)
+# What Reconcile Does
+
+Reconcile simulates how real AP teams verify invoices before payment.
+
+The system processes invoices through a multi-agent workflow that:
+
+1. Extracts structured data from invoices, purchase orders, and goods receipts
+2. Validates invoice integrity
+3. Detects duplicates
+4. Performs 3-way matching
+5. Classifies expenses
+6. Scores invoice risk
+7. Detects vendor-level anomalies
+8. Routes invoices through approval workflows
+9. Generates human-readable audit explanations
+10. Maintains a complete audit trail
+
+Every stage runs inside a LangGraph workflow and streams live updates to the frontend via Server-Sent Events (SSE).
+
+The system is designed around operational auditability rather than a single opaque AI response.
 
 ---
 
-## What Reconcile Does
+# v1.1 Improvements
 
-Reconcile processes invoices the way real accounts-payable teams do:
+Reconcile v1.1 focuses on trust, reviewability, and human-in-the-loop workflows.
 
-1. Extract structured fields from uploaded documents
-2. Validate invoice integrity
-3. Detect duplicates
-4. Perform 3-way matching against PO + GR
-5. Classify expense category
-6. Score invoice risk
-7. Route for approval
-8. Generate a complete audit-trail report
+### Confidence-Aware Extraction
 
-Every stage runs as a node inside a LangGraph workflow and streams live results to the frontend via Server-Sent Events.
+Extraction confidence now propagates through downstream stages, allowing uncertain OCR/extraction outputs to influence risk scoring.
 
-Invalid or duplicate invoices short-circuit early instead of wasting downstream compute.
+### Vendor Anomaly History
+
+Risk analysis now considers historical vendor behavior and detects abnormal invoice patterns or amount deviations.
+
+### Human Review Dashboard
+
+Flagged invoices can now be reviewed, approved, or rejected through a dedicated review workflow.
+
+### AI-Generated Audit Explanations
+
+The pipeline generates concise natural-language explanations for flagged invoices.
+
+Example:
+
+> "Flagged because the invoice amount is significantly higher than historical vendor averages and multiple billed items are missing from the goods receipt."
 
 ---
 
-## Pipeline
-
+# Pipeline
 ```text
 Upload Invoice (+ optional PO / GR)
         │
@@ -77,24 +102,36 @@ Upload Invoice (+ optional PO / GR)
 5. Classification
         │
         ▼
-6. Risk Scoring
+6. Risk Scoring (incorporates vendor anomaly analysis)
         │
         ▼
 7. Approval Routing
         │
         ▼
-8. Audit Report Generation
+8. Audit Report + AI Explanation
+        │
+        ▼
+   ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+   Human Review (async, post-completion)
+   Flagged reports can be approved or
+   rejected from the dashboard at any
+   time after the run finishes.
 ```
+---
+
+# Core Features
+
+## Structured Multimodal Extraction
+
+Uses Gemini multimodal extraction with schema-constrained outputs for:
+
+* Invoices
+* Purchase Orders
+* Goods Receipts
 
 ---
 
-## Core Features
-
-### Structured Document Extraction
-
-Uses Gemini multimodal extraction with schema-constrained outputs for invoices, purchase orders, and goods receipts.
-
-### 3-Way Matching
+## 3-Way Matching
 
 Compares:
 
@@ -104,36 +141,66 @@ Compares:
 
 Line-by-line with configurable tolerances and severity-tagged discrepancies.
 
-### Risk-Aware Approval Routing
+---
 
-Low-risk matched invoices can auto-approve, while flagged invoices route for review.
+## Confidence-Aware Risk Analysis
 
-### Live Streaming Pipeline
+Risk scoring incorporates:
 
-Each agent streams results in real time to the frontend ledger UI using SSE.
-
-### Auditability
-
-Every stage produces an inspectable output rather than a single opaque response.
+* Extraction confidence
+* Matching failures
+* Duplicate signals
+* Vendor anomalies
+* Validation errors
 
 ---
 
-## Tech Stack
+## Vendor-Aware Anomaly Detection
 
-| Layer         | Tech                         |
-| ------------- | ---------------------------- |
-| Orchestration | LangGraph                    |
-| Extraction    | Gemini + LangChain           |
-| Backend       | FastAPI                      |
-| Streaming     | Server-Sent Events           |
-| Database      | Supabase (PostgreSQL)        |
-| Auth          | JWT + bcrypt                 |
-| Frontend      | HTML / CSS / JavaScript      |
-| Deployment    | Vercel + Hugging Face Spaces |
+Detects abnormal vendor behavior using historical invoice patterns and amount deviations.
 
 ---
 
-## Architecture
+## Human Review Workflow
+
+Flagged invoices route into a review dashboard where reviewers can approve or reject invoices.
+
+---
+
+## AI Audit Explanations
+
+Transforms raw risk signals into concise audit-readable explanations for AP reviewers.
+
+---
+
+## Live Streaming Pipeline
+
+Each workflow node streams results in real time to the frontend using SSE.
+
+---
+
+## Auditability
+
+Every pipeline stage produces inspectable structured outputs instead of opaque model responses.
+
+---
+
+# Tech Stack
+
+| Layer            | Tech                         |
+| ---------------- | ---------------------------- |
+| Orchestration    | LangGraph                    |
+| LLM / Extraction | Gemini + LangChain           |
+| Backend          | FastAPI                      |
+| Streaming        | Server-Sent Events           |
+| Database         | Supabase (PostgreSQL)        |
+| Auth             | JWT + bcrypt                 |
+| Frontend         | HTML / CSS / JavaScript      |
+| Deployment       | Hugging Face Spaces + Vercel |
+
+---
+
+# Architecture
 
 ```text
 Frontend (Vercel)
@@ -144,6 +211,8 @@ FastAPI Backend (HF Spaces)
         ├── LangGraph Workflow
         ├── Gemini Extraction
         ├── Matching + Risk Engine
+        ├── Vendor Anomaly Analysis
+        ├── AI Explanation Layer
         └── SSE Streaming
                 │
                 ▼
@@ -152,7 +221,7 @@ FastAPI Backend (HF Spaces)
 
 ---
 
-## Project Structure
+# Project Structure
 
 ```text
 backend/
@@ -169,18 +238,19 @@ backend/
     risk_analysis.py
     approval.py
     report.py
+    anomaly_exp.py
 
 frontend/
   index.html
   style.css
-  app.js
+  js/
 ```
 
 ---
 
-## Running Locally
+# Running Locally
 
-### Backend
+## Backend
 
 ```bash
 cd backend
@@ -197,7 +267,9 @@ DB_URL=your_supabase_postgres_url
 JWT_SECRET=your_secret
 ```
 
-### Frontend
+---
+
+## Frontend
 
 ```bash
 cd frontend
@@ -212,40 +284,43 @@ http://localhost:8080
 
 ---
 
-## Honest Limitations
+# Current Limitations
 
-This is a portfolio/demo project rather than a production AP platform.
+Reconcile is still a portfolio / research-style system rather than a production AP platform.
 
 Current limitations include:
 
 * Rules-based expense classification
+* Limited historical anomaly baselines
 * No ERP integrations
-* Synchronous pipeline execution
-* Limited historical/vendor-aware risk modeling
-* Matching tuned for common invoice structures rather than highly noisy enterprise documents
+* Synchronous workflow execution
+* Limited reviewer collaboration tooling
+* Matching optimized for relatively structured invoices
+* No continuous learning from reviewer feedback
 
 ---
 
-## Why This Project Exists
+# Why This Project Exists
 
 Most invoice AI demos stop at OCR extraction.
 
-The interesting operational problem is verifying whether the invoice should actually be paid.
+The harder operational problem is determining whether an invoice should actually be paid.
 
 Reconcile focuses on the workflow layer:
-validation, matching, auditability, and approval orchestration.
+validation, reconciliation, anomaly detection, auditability, escalation, and approval orchestration.
 
 ---
 
-## Future Improvements
+# Future Improvements
 
-* Async/concurrent pipeline execution
-* Human review dashboard
+* Async/concurrent workflow execution
+* Reviewer feedback learning loops
+* Adaptive approval policies
 * ERP integrations
-* Vendor behavior profiling
-* Configurable approval policies
-* Analytics + monitoring
-* Confidence scoring
-* Advanced document handling for noisy scans
+* Multi-user review collaboration
+* Better anomaly baselines
+* Evaluation + observability tooling
+* Advanced handling for noisy enterprise scans
+* Analytics dashboards
+* Policy-based workflow configuration
 
----
