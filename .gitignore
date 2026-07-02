@@ -9,3 +9,8 @@ notebooks
 
 # necceassry file __pycache__/
 *.pyc
+
+# virutal enviorment
+/revn
+
+todo.txt
