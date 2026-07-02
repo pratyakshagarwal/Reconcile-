@@ -43,7 +43,7 @@ def insert_reviewer_decision(
     import json
     cur.execute(
         """INSERT INTO reviewer_decisions
-           (invoice_id, reviewer_id, vendor_name, decision, risk_score, risk_factors, reviewer_note)
+           (invoice_id, reviewer_id, vendor_name, decision, risk_score_at_decision, risk_factors, reviewer_note)
            VALUES (%s, %s, %s, %s, %s, %s, %s)""",
         (
             invoice_id,
@@ -69,7 +69,7 @@ def get_vendor_decisions(vendor_name: str) -> list[dict]:
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        """SELECT decision, risk_score, risk_factors, created_at
+        """SELECT decision, risk_score_at_decision, risk_factors, created_at
            FROM reviewer_decisions
            WHERE vendor_name = %s
            ORDER BY created_at DESC""",
@@ -81,7 +81,7 @@ def get_vendor_decisions(vendor_name: str) -> list[dict]:
     return [
         {
             "decision": r[0],
-            "risk_score": r[1],
+            "risk_score_at_decision": r[1],
             "risk_factors": r[2],
             "created_at": r[3].isoformat(),
         }
