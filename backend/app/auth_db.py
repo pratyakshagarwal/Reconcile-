@@ -189,7 +189,7 @@ def update_run_decision(
             reviewer_id=user_id,
             vendor_name=report.get("vendor_name"),
             decision=decision,
-            risk_score=risk.get("score"),
+            risk_score_at_decision=risk.get("score"),
             risk_factors=risk.get("reasons", []),
             reviewer_note=note,
         )
