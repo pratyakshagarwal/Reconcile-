@@ -198,8 +198,16 @@
       </div>
 
       <div class="decision-actions" id="decisionActions" hidden>
-        <button class="btn-approve" id="approveBtn">Approve</button>
-        <button class="btn-reject" id="rejectBtn">Reject</button>
+        <textarea
+          id="reviewerNote"
+          class="reviewer-note"
+          placeholder="Add a note (optional)..."
+          rows="2"
+        ></textarea>
+        <div class="decision-btns">
+          <button class="btn-approve" id="approveBtn">Approve</button>
+          <button class="btn-reject" id="rejectBtn">Reject</button>
+        </div>
       </div>
       <p class="decision-result" id="decisionResult"></p>
 
