@@ -108,7 +108,6 @@ def classification_node(state: PipelineState) -> PipelineState:
     return {**state, "classification": classify_invoice(state["invoice"])}
 
 def risk_node(state: PipelineState) -> PipelineState:
-    baseline = get_vendor_baseline(state['invoice']['vendor_name'])
     match_result = MatchResult(**state["match_result"])
     risk = assess_risk(state["invoice"], match_result, state['invoice_confidences'])
     return {**state, "risk": risk}
