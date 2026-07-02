@@ -11,6 +11,7 @@ from backend.app.matching import match_invoice, MatchResult
 from backend.app.classify import classify_invoice
 from backend.app.risk_analysis import assess_risk
 from backend.app.approval import route_approval
+from backend.app.dbs.risk_db import get_vendor_baseline
 from backend.app.report import generate_report
 from backend.app.helper import extract_confidences, unwrap_confident_fields
 
@@ -107,8 +108,8 @@ def matching_node(state: PipelineState) -> PipelineState:
 def classification_node(state: PipelineState) -> PipelineState:
     return {**state, "classification": classify_invoice(state["invoice"])}
 
-
 def risk_node(state: PipelineState) -> PipelineState:
+    baseline = get_vendor_baseline(state['invoice']['vendor_name'])
     match_result = MatchResult(**state["match_result"])
     risk = assess_risk(state["invoice"], match_result, state['invoice_confidences'])
     return {**state, "risk": risk}
@@ -131,7 +132,6 @@ def report_node(state: PipelineState) -> PipelineState:
         warnings=state['warnings']
     )
     return {**state, "report": report, "status": state.get("status", "processed")}
-
 
 # Conditional routing: stop early if invalid or duplicate
 def route_after_validation(state: PipelineState) -> str:
