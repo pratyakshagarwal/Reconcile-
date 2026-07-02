@@ -608,3 +608,24 @@ h1, h2, h3 { margin: 0; font-family: var(--font-serif); font-weight: 500; color:
   color: var(--ink);
   font-size: 0.96rem;
 }
+
+.reviewer-note {
+  width: 100%;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+  margin-bottom: 10px;
+}
+.reviewer-note:focus {
+  outline: none;
+  border-color: var(--ledger-green);
+}
+.decision-btns {
+  display: flex;
+  gap: 10px;
+}
