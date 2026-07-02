@@ -102,6 +102,7 @@ function setupDecisionButtons(report, runId) {
   const rejectBtn = document.getElementById("rejectBtn");
 
   resultText.textContent = "";
+  document.getElementById("reviewerNote").value = ""; 
 
   const needsReview = report?.stages?.approval?.decision !== "auto_approved";
   actions.hidden = !needsReview || !runId;
@@ -111,17 +112,22 @@ function setupDecisionButtons(report, runId) {
 }
 
 async function submitDecision(runId, decision, actionsEl, resultEl) {
+  const noteEl = document.getElementById("reviewerNote");
+  const note = noteEl.value.trim() || null; // null if empty, exactly as you want
+
   try {
-    const res = await authFetch(`/api/runs/${runId}/decide?decision=${decision}`, {
-      method: "POST",
-    });
+    const url = note
+      ? `/api/runs/${runId}/decide?decision=${decision}&note=${encodeURIComponent(note)}`
+      : `/api/runs/${runId}/decide?decision=${decision}`;
+
+    const res = await authFetch(url, { method: "POST" });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.detail || "Could not record decision.");
     }
     actionsEl.hidden = true;
-    resultEl.textContent = `Decision recorded: ${decision}`;
-    loadHistory(); // refresh sidebar to reflect the new decision
+    resultEl.textContent = `Decision recorded: ${decision}${note ? ` — "${note}"` : ""}`;
+    loadHistory();
   } catch (err) {
     resultEl.textContent = `Error: ${err.message}`;
   }
