@@ -18,7 +18,7 @@ def create_reviewer_decisions_table():
             reviewer_id INTEGER REFERENCES users(id),
             vendor_name TEXT,
             decision TEXT NOT NULL,
-            risk_score INTEGER,
+            risk_score_at_decision INTEGER,
             risk_factors JSONB,
             reviewer_note TEXT,
             created_at TIMESTAMP DEFAULT NOW()
@@ -34,7 +34,7 @@ def insert_reviewer_decision(
     reviewer_id: int,
     vendor_name: str | None,
     decision: str,
-    risk_score: int | None,
+    risk_score_at_decision: int | None,
     risk_factors: list,
     reviewer_note: str = "",
 ):
@@ -50,7 +50,7 @@ def insert_reviewer_decision(
             reviewer_id,
             vendor_name,
             decision,
-            risk_score,
+            risk_score_at_decision,
             json.dumps(risk_factors),
             reviewer_note,
         )
