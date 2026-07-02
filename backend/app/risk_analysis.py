@@ -1,6 +1,6 @@
 from backend.app.schemas import MatchResult
 from backend.app.helper import get_vendor_history
-
+from backend.app.dbs.risk_db import get_vendor_decisions
 
 
 def assess_risk(invoice: dict, match_result: MatchResult,invoice_confidences: dict) -> dict:
@@ -25,6 +25,21 @@ def assess_risk(invoice: dict, match_result: MatchResult,invoice_confidences: di
     if vendor_history.get("is_new_vendor"):
         score += 10
         reasons.append("New/unseen vendor")
+    
+    vendor_name = invoice.get("vendor_name", "")
+    past_decisions = get_vendor_decisions(vendor_name)
+    if past_decisions:
+        approved = sum(1 for d in past_decisions if d["decision"] == "approved")
+        total = len(past_decisions)
+        approval_rate = approved / total
+
+        if approval_rate >= 0.8 and total >= 3:
+            score = max(0, score - 15)
+            reasons.append(f"Vendor historically approved by reviewers ({approved}/{total} times)")
+        elif approval_rate <= 0.2 and total >= 3:
+            score += 20
+            reasons.append(f"Vendor historically rejected by reviewers ({total - approved}/{total} times)")
+
 
     tier = "high" if score >= 50 else "medium" if score >= 20 else "low"
     return {"score": score, "tier": tier, "reasons": reasons}
