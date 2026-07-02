@@ -234,3 +234,4 @@ def migrate_invoices_table():
     cur.close()
     conn.close()
 
+
