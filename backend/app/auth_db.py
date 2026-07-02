@@ -8,7 +8,7 @@ and back-fill user_id columns onto invoices/purchase_orders/goods_receipts.
 import json
 from datetime import datetime, timezone
 from backend.app.db import get_connection
-
+from backend.app.dbs.risk_db import insert_reviewer_decision, create_reviewer_decisions_table
 
 def init_auth_db():
     conn = get_connection()
@@ -46,6 +46,7 @@ def init_auth_db():
     cur.execute("ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS decided_by INTEGER REFERENCES users(id)")
     cur.execute("ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS decided_at TIMESTAMP")
 
+    create_reviewer_decisions_table()
 
     conn.commit()
     cur.close()
@@ -146,23 +147,51 @@ def get_pipeline_run(user_id: int, run_id: int) -> dict | None:
 VALID_DECISIONS = {"approved", "rejected"}
 
 
-def update_run_decision(run_id: int, user_id: int, decision: str) -> bool:
+def update_run_decision(
+    run_id: int,
+    user_id: int,
+    decision: str,
+    note: str = ""
+) -> bool:
     """
-    Records a human's approve/reject decision on a pipeline run.
-    Scoped to user_id so a user can only decide on their own runs.
-    Returns True if a row was actually updated, False if no matching run was found
-    (either it doesn't exist, or it belongs to a different user).
+    Records the human decision on a pipeline run AND logs it
+    to reviewer_decisions for future vendor risk adjustment —
+    both happen in the same call, so they're always in sync.
     """
     conn = get_connection()
     cur = conn.cursor()
+
+    # 1. Update the pipeline run's decision fields
     cur.execute(
         """UPDATE pipeline_runs
-           SET human_decision = %s, decided_by = %s, decided_at = %s
-           WHERE id = %s AND user_id = %s""",
-        (decision, user_id, datetime.now(timezone.utc), run_id, user_id)
+           SET human_decision = %s,
+               decided_by = %s,
+               decided_at = %s,
+               reviewer_note = %s
+           WHERE id = %s AND user_id = %s
+           RETURNING invoice_id, report""",
+        (decision, user_id, datetime.now(timezone.utc), note, run_id, user_id)
     )
-    updated = cur.rowcount > 0
+    row = cur.fetchone()
+    updated = row is not None
     conn.commit()
     cur.close()
     conn.close()
+
+    # 2. If update succeeded, log to reviewer_decisions for risk learning
+    if updated:
+        invoice_id, report = row
+        report = report or {}
+        risk = report.get("stages", {}).get("risk", {})
+
+        insert_reviewer_decision(
+            invoice_id=invoice_id,
+            reviewer_id=user_id,
+            vendor_name=report.get("vendor_name"),
+            decision=decision,
+            risk_score=risk.get("score"),
+            risk_factors=risk.get("reasons", []),
+            reviewer_note=note,
+        )
+
     return updated
